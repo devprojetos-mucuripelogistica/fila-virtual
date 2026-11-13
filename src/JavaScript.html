@@ -85,6 +85,8 @@ function avisoVersaoNova() {
   document.body.appendChild(d);
 }
 function recarregarApp() {
+  // Aberto pelo endereço do GitHub: pede para a página de fora recarregar (o endereço continua o mesmo).
+  if (window.FV_CASCA) { try { window.top.postMessage({ fv: 'recarregar' }, '*'); return; } catch (e) { } }
   try { if (window.FV_URL) { window.top.location.href = window.FV_URL; return; } } catch (e) { }
   location.reload();
 }

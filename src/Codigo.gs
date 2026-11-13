@@ -115,7 +115,7 @@ const CONFIG_PADRAO = {
 };
 
 /** Abre o aplicativo (web app). */
-function doGet() {
+function doGet(e) {
   let cfg = {};
   try { cfg = config_(); } catch (e) { cfg = {}; }
   const t = HtmlService.createTemplateFromFile('Index');
@@ -125,6 +125,8 @@ function doGet() {
   let url = '';
   try { url = ScriptApp.getService().getUrl() || ''; } catch (e) { url = ''; }
   t.appUrl = url;
+  // aberto pelo endereço do GitHub (index.html com ?casca=1): o recarregar é feito pela página de fora
+  t.casca = !!(e && e.parameter && e.parameter.casca === '1');
   const out = t.evaluate()
     .setTitle(APP_NOME)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover')
