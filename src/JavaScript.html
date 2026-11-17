@@ -1151,6 +1151,7 @@ function otimista(nome, args) {
   if (nome === 'pausarAtendimento' && item(id)) item(id).status = 'PAUSADO';
   if (nome === 'retomarAtendimento' && item(id)) { const o = maxOrdem() + 1; item(id).status = 'NA_FILA'; item(id).ordem = o; }
   if (nome === 'chamarProximo') { const p = naFila()[0]; if (p) { p.status = 'EM_ATENDIMENTO'; p.inicio_atendimento = new Date(agora()).toISOString(); } }
+  if (nome === 'chamarTodos') naFila().forEach(function (p) { if (args[0] !== false || p.dentro_raio !== false) { p.status = 'EM_ATENDIMENTO'; p.inicio_atendimento = new Date(agora()).toISOString(); } });
   if (nome === 'moverNaFila') {
     const l = naFila(), i = l.findIndex(function (f) { return f.id === id; }), j = i + (args[1] < 0 ? -1 : 1);
     if (i > -1 && j > -1 && j < l.length) { const t = l[i].ordem; l[i].ordem = l[j].ordem; l[j].ordem = t; }
@@ -1162,6 +1163,42 @@ function otimista(nome, args) {
   }
   if (nome === 'aprovarSolicitacao' || nome === 'rejeitarSolicitacao') A.solicitacoes = A.solicitacoes.filter(function (x) { return x.id !== id; });
   if (A.pagina === 'dashboard') renderDashboard(document.getElementById('aConteudo'));
+}
+
+/** Janela de confirmação do "Chamar Todos": mostra a ordem em que cada um será chamado. */
+function confirmarChamarTodos(na) {
+  const fora = na.filter(function (f) { return f.dentro_raio === false; }).length;
+  const lista = function (incluir) { return na.filter(function (f) { return incluir || f.dentro_raio !== false; }); };
+  const desenhar = function (incluir) {
+    const l = lista(incluir);
+    return l.length ? '<ol class="chamar-lista">' + l.map(function (f) {
+      return '<li><b>' + esc(f.motorista_nome) + '</b>' + (f.dentro_raio === false ? ' <span class="tag tag-ambar">fora do raio</span>' : '') + '</li>';
+    }).join('') + '</ol>' : '<p class="txt2 mb16">Ninguém dentro do raio para chamar.</p>';
+  };
+  const m = abrirModal({
+    titulo: 'Chamar todos da fila', icone: 'megaphone',
+    html: '<p class="mb12">Todos abaixo serão chamados <b>de uma vez, nesta ordem</b>, e passam para "Em Atendimento":</p>' +
+      '<div id="ctLista">' + desenhar(true) + '</div>' +
+      (fora ? '<label class="chamar-fora"><input type="checkbox" id="ctFora" checked> ' + (fora === 1 ? 'Incluir também o motorista que está fora do raio' : 'Incluir também os ' + fora + ' que estão fora do raio') + '</label>' : '') +
+      '<div class="linha mt12" style="justify-content:flex-end"><button class="btn btn-contorno" data-n>Cancelar</button>' +
+      '<button class="btn btn-verde" data-s>' + ic('megaphone') + '<span id="ctBotao">Chamar ' + lista(true).length + '</span></button></div>'
+  });
+  const cx = m.corpo.querySelector('#ctFora'), bs = m.corpo.querySelector('[data-s]');
+  if (cx) cx.onchange = function () {
+    const n = lista(cx.checked).length;
+    m.corpo.querySelector('#ctLista').innerHTML = desenhar(cx.checked);
+    m.corpo.querySelector('#ctBotao').textContent = 'Chamar ' + n;
+    bs.disabled = !n;
+  };
+  m.corpo.querySelector('[data-n]').onclick = m.fechar;
+  bs.onclick = function () {
+    const incluir = cx ? cx.checked : true, previstos = lista(incluir).length;
+    m.fechar();
+    acaoFila('chamarTodos', [incluir], function (r) {
+      const n = (r && r.qtd) || previstos;
+      return n + (n === 1 ? ' motorista chamado' : ' motoristas chamados') + (r && r.falhas ? ' (' + r.falhas + ' aviso(s) falharam)' : '');
+    });
+  };
 }
 
 function acaoFila(nome, args, msgOk) {
@@ -1224,7 +1261,9 @@ function renderDashboard(c) {
   // Fila dentro do raio
   h += '<div class="card mt16"><div class="card-faixa" style="background:linear-gradient(90deg,#0b3d61,#082e4a)"></div><div class="card-cab"><div class="card-tit">' + ic('users', 'cor-azul') +
     'Fila - Dentro do Raio' + (dentro.length ? ' <span class="tag tag-azul">' + dentro.length + '</span>' : '') + '</div>' +
-    (na.length ? '<button class="btn btn-verde" id="dChamar" ' + (A.processando.chamarProximo ? 'disabled' : '') + '>' + ic('user-check') + 'Chamar Próximo</button>' : '') +
+    (na.length ? '<div class="linha">' +
+      (na.length > 1 ? '<button class="btn btn-contorno" id="dChamarTodos" ' + (A.processando.chamarTodostrue || A.processando.chamarTodosfalse ? 'disabled' : '') + '>' + ic('megaphone') + 'Chamar Todos (' + na.length + ')</button>' : '') +
+      '<button class="btn btn-verde" id="dChamar" ' + (A.processando.chamarProximo ? 'disabled' : '') + '>' + ic('user-check') + 'Chamar Próximo</button></div>' : '') +
     '</div><div class="card-corpo">';
   if (!dentro.length) h += '<div class="vazio">' + ic('users') + '<p>Nenhum motorista no raio</p></div>';
   else h += '<div id="dLista">' + dentro.map(function (f, i) { return itemFila(f, i, 'fila', na); }).join('') + '</div>' +
@@ -1243,6 +1282,8 @@ function renderDashboard(c) {
     bc.disabled = true; bc.innerHTML = '<span class="spinner pq branco"></span>';
     acaoFila('chamarProximo', [], function (r) { return r.nome + ' foi chamado' + (r.avisos && r.avisos.length ? ' (' + r.avisos.join(', ') + ')' : ''); });
   };
+  const bt = document.getElementById('dChamarTodos');
+  if (bt) bt.onclick = function () { confirmarChamarTodos(na); };
   c.querySelectorAll('[data-acao]').forEach(function (b) {
     b.onclick = function () {
       const id = b.dataset.id, ac = b.dataset.acao;

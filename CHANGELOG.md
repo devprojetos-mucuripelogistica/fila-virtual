@@ -3,6 +3,11 @@
 As mesmas novidades aparecem para os usuários na janela **"O que há de novo"** do app.
 O texto delas fica na lista `NOVIDADES`, no início de `src/Codigo.gs`.
 
+## Versão 6 — 17/11/2026 · Chamar todos de uma vez
+- Novo botão **Chamar Todos (N)** no Dashboard. Ele chama de uma só vez, na ordem da fila, todos os motoristas que estão aguardando.
+- Antes de chamar, o app mostra a lista numerada e deixa escolher se inclui quem está fora do raio.
+- Cada chamada fica registrada nos Movimentos e no Histórico como "Chamado junto com toda a fila (1º de N)", e o aviso de chamada é enviado a cada motorista.
+
 ## Versão 5 — 13/11/2026 · Visual novo e relógio interno
 - Visual igual ao do Quadro de Tarefas: fontes Montserrat e Exo 2, menu lateral que dá para recolher, tela de login nova e modo escuro (botão Aparência).
 - Animações: abertura com o logo, telas e cartões entrando em sequência, janelas e painéis deslizando.

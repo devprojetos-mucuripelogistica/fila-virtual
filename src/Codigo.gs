@@ -17,8 +17,12 @@ const APP_NOME = 'Fila Virtual';
  * Cada pessoa (motorista ou administrador) vê a janela "O que há de novo" uma vez por versão,
  * e quem estiver com o app aberto recebe o aviso "O app foi atualizado — Recarregar".
  */
-const VERSAO_APP = '5';
+const VERSAO_APP = '6';
 const NOVIDADES = [
+  { versao: '6', data: '2026-11-17', titulo: 'Chamar todos de uma vez', itens: [
+    'Novo botão "Chamar Todos" no Dashboard: chama de uma só vez, na ordem da fila, todos os motoristas que estão aguardando.',
+    'Antes de chamar, o app mostra a lista na ordem e deixa escolher se inclui quem está fora do raio.'
+  ] },
   { versao: '5', data: '2026-11-13', titulo: 'Visual novo e relógio interno', itens: [
     'Visual igual ao do Quadro de Tarefas: menu lateral, tela de entrada nova e modo escuro (botão Aparência).',
     'Animações na abertura e ao trocar de tela.',
@@ -1059,6 +1063,33 @@ function chamarProximo(token) {
     });
     const avisos = notificarChamada_(chamado);
     return { nome: chamado.motorista_nome, avisos: avisos };
+  });
+}
+
+/**
+ * Chama TODOS os motoristas que estão aguardando, na ordem da fila (1º, 2º, 3º...).
+ * incluirFora = false chama só quem está dentro do raio.
+ */
+function chamarTodos(token, incluirFora) {
+  return api_(function () {
+    sessao_(token, 'A');
+    const chamados = comLock_(function () {
+      const fila = naFilaOrdenada_().filter(function (f) { return incluirFora !== false || f.dentro_raio !== false; });
+      if (!fila.length) throw new Error('Não há motoristas aguardando.');
+      const hora = agoraIso_();
+      return fila.map(function (item, i) {
+        atualizar_('Fila', item.id, { status: 'EM_ATENDIMENTO', inicio_atendimento: hora });
+        hist_(dadosItem_(item), 'CHAMADO_ATENDIMENTO', { detalhes: 'Chamado junto com toda a fila (' + (i + 1) + 'º de ' + fila.length + ')', admin_responsavel: 'admin', posicao_fila: i + 1 });
+        mov_(dadosItem_(item), 'CHAMADO_ATENDIMENTO', { posicao_anterior: item.ordem, posicao_nova: item.ordem, admin_responsavel: 'admin', observacao: 'Chamado junto com toda a fila (' + (i + 1) + 'º de ' + fila.length + ')', status_fila: 'EM_ATENDIMENTO' });
+        return limpar_(item);
+      });
+    });
+    // avisos (WhatsApp etc.) fora do bloqueio, na mesma ordem da fila
+    let falhas = 0;
+    chamados.forEach(function (item) {
+      try { notificarChamada_(item).forEach(function (a) { if (/falhou/.test(a)) falhas++; }); } catch (e) { falhas++; }
+    });
+    return { qtd: chamados.length, nomes: chamados.map(function (c) { return c.motorista_nome; }), falhas: falhas };
   });
 }
 
