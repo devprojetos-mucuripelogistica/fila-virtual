@@ -8,7 +8,7 @@ Feito em **Google Apps Script**. Os dados ficam numa **planilha do Google**, ent
 
 > **Abrir o app:** `https://SEU-USUARIO.github.io/fila-de-atendimento/` (GitHub Pages; veja [como ativar](docs/COMO_USAR_O_GITHUB.md#endereço-do-app-pelo-github-github-pages))
 >
-> Versão atual: **6** — veja o [CHANGELOG](CHANGELOG.md).
+> Versão atual: **7** — veja o [CHANGELOG](CHANGELOG.md).
 
 | Login | Painel do administrador | Motorista |
 |---|---|---|
@@ -26,7 +26,7 @@ Feito em **Google Apps Script**. Os dados ficam numa **planilha do Google**, ent
 - Tem perfil com foto, tema claro, escuro ou automático e a janela "Novidades do app".
 
 **Administrador**
-- **Dashboard:** solicitações de entrada, motoristas em atendimento e fila dentro e fora do raio. Dá para arrastar, subir, descer, pausar e remover motoristas, chamar o próximo ou **chamar todos de uma vez**, na ordem da fila.
+- **Dashboard:** solicitações de entrada, motoristas em atendimento e fila dentro e fora do raio. Dá para arrastar, subir, descer, pausar e remover motoristas, chamar o próximo (vários seguidos, sem precisar finalizar) ou **chamar vários de uma vez** (marcando quem, os primeiros N ou todos), sempre na ordem da fila.
 - **Relatórios:** lista de presença, movimentos da fila, histórico de logs e histórico de ações.
 - **Relatório de Viagens.**
 - **Gerenciar Motoristas:** cadastrar, editar, bloquear e excluir.

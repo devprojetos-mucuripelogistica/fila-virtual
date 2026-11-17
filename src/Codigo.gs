@@ -17,11 +17,14 @@ const APP_NOME = 'Fila Virtual';
  * Cada pessoa (motorista ou administrador) vê a janela "O que há de novo" uma vez por versão,
  * e quem estiver com o app aberto recebe o aviso "O app foi atualizado — Recarregar".
  */
-const VERSAO_APP = '6';
+const VERSAO_APP = '7';
 const NOVIDADES = [
+  { versao: '7', data: '2026-11-17', titulo: 'Chamar vários de uma vez', itens: [
+    '"Chamar Próximo" pode ser clicado várias vezes seguidas: não é preciso finalizar quem está em atendimento para chamar o próximo.',
+    'Novo botão "Chamar Vários": marque quem vai ser chamado (ou escolha "os primeiros N" / "todos") e chame de uma só vez, na ordem da fila.'
+  ] },
   { versao: '6', data: '2026-11-17', titulo: 'Chamar todos de uma vez', itens: [
-    'Novo botão "Chamar Todos" no Dashboard: chama de uma só vez, na ordem da fila, todos os motoristas que estão aguardando.',
-    'Antes de chamar, o app mostra a lista na ordem e deixa escolher se inclui quem está fora do raio.'
+    'Botão para chamar de uma só vez, na ordem da fila, os motoristas que estão aguardando.'
   ] },
   { versao: '5', data: '2026-11-13', titulo: 'Visual novo e relógio interno', itens: [
     'Visual igual ao do Quadro de Tarefas: menu lateral, tela de entrada nova e modo escuro (botão Aparência).',
@@ -1049,48 +1052,62 @@ function rejeitarSolicitacao(token, solId) {
   });
 }
 
-function chamarProximo(token) {
+/** Marca um motorista da fila como chamado (dentro do bloqueio). */
+function chamarItem_(item, detalhe, pos) {
+  atualizar_('Fila', item.id, { status: 'EM_ATENDIMENTO', inicio_atendimento: agoraIso_() });
+  hist_(dadosItem_(item), 'CHAMADO_ATENDIMENTO', { detalhes: detalhe, admin_responsavel: 'admin', posicao_fila: pos });
+  mov_(dadosItem_(item), 'CHAMADO_ATENDIMENTO', { posicao_anterior: item.ordem, posicao_nova: item.ordem, admin_responsavel: 'admin', observacao: detalhe, status_fila: 'EM_ATENDIMENTO' });
+  return limpar_(item);
+}
+
+/**
+ * Chama o próximo da fila. NÃO precisa finalizar quem já está em atendimento:
+ * dá para clicar várias vezes seguidas. filaId = quem o operador viu como próximo na tela.
+ */
+function chamarProximo(token, filaId) {
   return api_(function () {
     sessao_(token, 'A');
     const chamado = comLock_(function () {
       const fila = naFilaOrdenada_();
       if (!fila.length) throw new Error('Não há motoristas aguardando.');
-      const item = fila[0];
-      atualizar_('Fila', item.id, { status: 'EM_ATENDIMENTO', inicio_atendimento: agoraIso_() });
-      hist_(dadosItem_(item), 'CHAMADO_ATENDIMENTO', { detalhes: 'Motorista chamado para atendimento pelo admin', admin_responsavel: 'admin', posicao_fila: 1 });
-      mov_(dadosItem_(item), 'CHAMADO_ATENDIMENTO', { posicao_anterior: item.ordem, posicao_nova: item.ordem, admin_responsavel: 'admin', observacao: 'Motorista chamado para atendimento', status_fila: 'EM_ATENDIMENTO' });
-      return limpar_(item);
+      let pos = 0;
+      if (filaId) { const k = fila.findIndex(function (f) { return f.id === filaId; }); if (k > -1) pos = k; }
+      return chamarItem_(fila[pos], 'Motorista chamado para atendimento', pos + 1);
     });
     const avisos = notificarChamada_(chamado);
-    return { nome: chamado.motorista_nome, avisos: avisos };
+    return { id: chamado.id, nome: chamado.motorista_nome, avisos: avisos };
   });
 }
 
 /**
- * Chama TODOS os motoristas que estão aguardando, na ordem da fila (1º, 2º, 3º...).
- * incluirFora = false chama só quem está dentro do raio.
+ * Chama de uma vez os motoristas escolhidos (ids), sempre NA ORDEM DA FILA.
+ * Quem já foi chamado ou saiu da fila é ignorado.
  */
-function chamarTodos(token, incluirFora) {
+function chamarVarios(token, ids) {
   return api_(function () {
     sessao_(token, 'A');
+    const quer = {};
+    (ids || []).forEach(function (id) { quer[id] = true; });
     const chamados = comLock_(function () {
-      const fila = naFilaOrdenada_().filter(function (f) { return incluirFora !== false || f.dentro_raio !== false; });
-      if (!fila.length) throw new Error('Não há motoristas aguardando.');
-      const hora = agoraIso_();
-      return fila.map(function (item, i) {
-        atualizar_('Fila', item.id, { status: 'EM_ATENDIMENTO', inicio_atendimento: hora });
-        hist_(dadosItem_(item), 'CHAMADO_ATENDIMENTO', { detalhes: 'Chamado junto com toda a fila (' + (i + 1) + 'º de ' + fila.length + ')', admin_responsavel: 'admin', posicao_fila: i + 1 });
-        mov_(dadosItem_(item), 'CHAMADO_ATENDIMENTO', { posicao_anterior: item.ordem, posicao_nova: item.ordem, admin_responsavel: 'admin', observacao: 'Chamado junto com toda a fila (' + (i + 1) + 'º de ' + fila.length + ')', status_fila: 'EM_ATENDIMENTO' });
-        return limpar_(item);
+      const fila = naFilaOrdenada_();
+      const escolhidos = fila.filter(function (f) { return quer[f.id]; });
+      if (!escolhidos.length) throw new Error('Nenhum dos motoristas escolhidos está aguardando na fila.');
+      return escolhidos.map(function (item, i) {
+        return chamarItem_(item, 'Chamado em grupo (' + (i + 1) + 'º de ' + escolhidos.length + ')', fila.indexOf(item) + 1);
       });
     });
-    // avisos (WhatsApp etc.) fora do bloqueio, na mesma ordem da fila
     let falhas = 0;
     chamados.forEach(function (item) {
       try { notificarChamada_(item).forEach(function (a) { if (/falhou/.test(a)) falhas++; }); } catch (e) { falhas++; }
     });
-    return { qtd: chamados.length, nomes: chamados.map(function (c) { return c.motorista_nome; }), falhas: falhas };
+    return { qtd: chamados.length, ids: chamados.map(function (c) { return c.id; }), nomes: chamados.map(function (c) { return c.motorista_nome; }), falhas: falhas };
   });
+}
+
+/** Mantido por compatibilidade: chama todos os que aguardam (incluirFora=false só os de dentro do raio). */
+function chamarTodos(token, incluirFora) {
+  const ids = naFilaOrdenada_().filter(function (f) { return incluirFora !== false || f.dentro_raio !== false; }).map(function (f) { return f.id; });
+  return chamarVarios(token, ids);
 }
 
 function itemAtivoOuErro_(filaId) {

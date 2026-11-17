@@ -588,11 +588,18 @@ html[data-tema="escuro"] .mot-acao{background:linear-gradient(to top,var(--fundo
 .novid-ver:not(.atual){opacity:.75}
 .novid-selo{font-family:Montserrat,sans-serif;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.06em;background:#C1CA4B;color:#0B3D61;padding:3px 7px;border-radius:6px}
 
-/* ---------- chamar todos ---------- */
-.chamar-lista{margin:0 0 6px;padding-left:24px;max-height:46vh;overflow:auto;display:grid;gap:6px;font-size:14px}
-.chamar-lista li::marker{font-weight:800;color:#1C75BB}
-.chamar-fora{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13.5px;font-weight:600;cursor:pointer}
-.chamar-fora input{width:18px;height:18px;accent-color:#1C75BB}
+/* ---------- chamar vários ---------- */
+.cv-barra{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:12px;background:var(--fundo,#F2F4F7);margin-bottom:10px;font-size:13.5px;font-weight:600}
+.cv-num{display:flex;align-items:center;gap:4px}
+.cv-num input{width:58px;text-align:center;font:inherit;font-weight:800;font-size:15px;padding:7px 4px;border:1px solid var(--borda,#D8DEE6);border-radius:9px;background:var(--card,#fff);color:inherit}
+.cv-atalhos{margin-left:auto;display:flex;gap:12px}
+.cv-link{background:none;border:0;padding:0;font:inherit;font-weight:800;color:#1C75BB;cursor:pointer;text-decoration:underline}
+.cv-lista{max-height:44vh;overflow:auto;display:grid;gap:6px}
+.cv-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--borda,#D8DEE6);border-radius:11px;cursor:pointer;transition:opacity .15s,background .15s}
+.cv-item input{width:19px;height:19px;accent-color:#1C75BB;flex:none}
+.cv-item.off{opacity:.5}
+.cv-pos{font-family:'Exo 2',sans-serif;font-style:italic;font-weight:900;color:#1C75BB;min-width:28px}
+.cv-nome{font-weight:700;flex:1}
 </style>
 </head>
 <body>

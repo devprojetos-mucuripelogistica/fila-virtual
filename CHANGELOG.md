@@ -3,6 +3,11 @@
 As mesmas novidades aparecem para os usuários na janela **"O que há de novo"** do app.
 O texto delas fica na lista `NOVIDADES`, no início de `src/Codigo.gs`.
 
+## Versão 7 — 17/11/2026 · Chamar vários e chamar em sequência
+- **Chamar Próximo** pode ser clicado várias vezes seguidas, sem finalizar quem está em atendimento. Cada clique chama quem está em 1º na tela naquele momento.
+- **Chamar Vários** (substitui o "Chamar Todos"): o operador marca quem será chamado, escolhe "os primeiros N" com os botões − / +, ou usa os atalhos "Todos" e "Nenhum". Os escolhidos são chamados de uma vez, sempre na ordem da fila.
+- No registro, aparece "Chamado em grupo (1º de N)".
+
 ## Versão 6 — 17/11/2026 · Chamar todos de uma vez
 - Novo botão **Chamar Todos (N)** no Dashboard. Ele chama de uma só vez, na ordem da fila, todos os motoristas que estão aguardando.
 - Antes de chamar, o app mostra a lista numerada e deixa escolher se inclui quem está fora do raio.
